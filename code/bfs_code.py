@@ -167,7 +167,7 @@ if __name__ == "__main__":
         [6,8],[7,9] ]
     
     grid_limits = [20, 20]
-    start_position = [1, 11]
+    start_position = [5, 11]
     goal_position = [15,15]
 
     path_bfs, nodes_bfs = compute_path_bfs(grid_limits, start_position, goal_position, obs_positions)
