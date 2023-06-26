@@ -1,10 +1,10 @@
 """
 Path planning - BFS, DFS & A star
 """
-
+import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
-
+import time
 
 def plot_planner(grid_size, start_pose, goal_pose, obstacles, path, nodes_explored, animation=False):
     """
@@ -19,13 +19,21 @@ def plot_planner(grid_size, start_pose, goal_pose, obstacles, path, nodes_explor
     :return:
     """
     # print(obstacles)
+    
     plt.show()
 
     fig, ax = plt.subplots()
+
+    ax.set_title("Breadth First Search", fontname='Comic Sans MS', fontsize=18)
+
     ax.set(
         xlim=(0, grid_size[0]), xticks=np.arange(1, grid_size[1]),
         ylim=(0, grid_size[0]), yticks=np.arange(1, grid_size[1])
     )
+
+    ax.set_ylabel("Rows", fontname="Arial", fontsize=12)
+    ax.set_xlabel("Colums", fontname="Arial", fontsize=12)
+
     plt.grid()
 
     # Plot start and goal pose
@@ -42,12 +50,19 @@ def plot_planner(grid_size, start_pose, goal_pose, obstacles, path, nodes_explor
         x, y = list(each_node)
         plt.fill_between([y, y+1], x, x+1, color='yellow')
         if animation:
-            plt.pause(0.05)
+            plt.pause(0.1)
 
+    #plot all grid row x col
+
+    for row in range(grid_size[0]):
+        for col in range(grid_size[1]):
+            plt.text(row + 0.1, col + 0.1, "[" + str(col)+","+str(row) +"]", color='black',fontsize=9, fontname='Comic Sans MS')
+
+    
     for each_pa in path:
         plt.fill_between([each_pa[1], each_pa[1] + 1], each_pa[0], each_pa[0] + 1, color='blue')
         if animation:
-            plt.pause(0.2)
+            plt.pause(0.1)
 
     plt.show()
 
@@ -55,10 +70,7 @@ def plot_planner(grid_size, start_pose, goal_pose, obstacles, path, nodes_explor
 
 def get_node_children(present_node):
 
-    children = []
-    
-    children.append( [present_node[0] + 1,present_node[1]] )
-    children.append( [present_node[0] - 1,present_node[1]] )
+    children = []  
     
     children.append( [present_node[0] ,present_node[1] + 1] )
     children.append( [present_node[0] ,present_node[1] - 1] )
@@ -66,12 +78,16 @@ def get_node_children(present_node):
     children.append( [present_node[0]+1 ,present_node[1] - 1] )
     children.append( [present_node[0]-1 ,present_node[1] + 1] )
 
+    children.append( [present_node[0] + 1,present_node[1]] )
+    children.append( [present_node[0] - 1,present_node[1]] )
+
     return children
 
 
-def valid_child(child):
+def valid_child(row_len, col_len,child):
     
-    if all([val >= 0 for val in child]):
+    # if all([val >= 0 and val < 10 for val in child]):
+    if (child[0] >= 0 and child[0] <= row_len) and (child[1] >= 0 and child[1] <= col_len):
         return True 
     
     return False
@@ -86,7 +102,7 @@ def construct_path(parent_lib,goal,start_pos):
         path_is.append(link_node)
         goal = link_node
 
-        print(link_node)
+        # print(link_node)
 
         if goal == start_pos:
             break
@@ -103,6 +119,8 @@ def compute_path_bfs(grid, start, goal, obs):
     :param obs: list(n, 2) - x y pose of multiple obstacles
     :return: path - list (n, 2) - path for robot from start to goal
     """
+    grid_rows = grid[0]
+    grid_col =  grid[1]
 
     path = []
     nodes_explored = {}
@@ -110,26 +128,33 @@ def compute_path_bfs(grid, start, goal, obs):
     goal_reached = False
     parents_lib = {tuple(start):None}
 
+    timeout = time.time() + 60*1 # 5minutes from now
+
     while not goal_reached:
 
         cur_node = queue.pop(0)
-
+        
         if cur_node == goal:
             goal_reached = True
             print("--------------------------------Loop break-----------------------------------")
             break
 
+        # if time.time() > timeout:
+        #     print("timeout not found")
+        #     break
+
         for each_child in get_node_children(cur_node):
 
             if tuple(each_child) not in nodes_explored:
 
-                if valid_child(each_child):
+                if valid_child(grid_rows,grid_col,each_child):
 
                     if each_child not in obs:
 
                         queue.append(each_child)
+
                         parents_lib[tuple(each_child)] = cur_node
-            
+        
         nodes_explored[tuple(cur_node)] = None
 
     print("parents lib",parents_lib)
@@ -167,8 +192,8 @@ if __name__ == "__main__":
         [6,8],[7,9] ]
     
     grid_limits = [20, 20]
-    start_position = [5, 11]
-    goal_position = [15,15]
+    start_position = [1,10]
+    goal_position = [11,5]
 
     path_bfs, nodes_bfs = compute_path_bfs(grid_limits, start_position, goal_position, obs_positions)
     print("Path: {}".format(path_bfs))
